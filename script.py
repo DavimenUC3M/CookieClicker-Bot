@@ -1,5 +1,3 @@
-import os 
-import random
 import torch
 import numpy as np
 import PIL
@@ -8,10 +6,21 @@ import time
 import pyautogui
 import onnx
 import onnxruntime as ort
-import matplotlib.pyplot as plt
 import pygame
 import dxcam
 
+from execution_arguments import get_arguments
+
+# Get arguments variables
+
+my_args = get_arguments()
+
+window_width = my_args.real_time_viewer_width
+window_height = my_args.real_time_viewer_height
+
+activate_rtv = my_args.real_time_viewer # Show real time viewer
+activate_auto_click = not my_args.auto_clicker
+activate_auto_aim = not my_args.auto_aim
 
 def getFrame(width=640,height=640):
     
@@ -37,8 +46,7 @@ camera = dxcam.create(device_idx=0, output_idx=0)
 image_width = 640
 image_height = 640
 
-window_width = 1280
-window_height = 720
+
 
 classes_dict = {0: 'GoldenCartridge',
            1: 'GoldenCookie',
@@ -98,12 +106,12 @@ while True:
         y1 = original_res[0] * y1_all[0] / window_height
         y2 = original_res[0] * y2_all[0] / window_height
 
-        pyautogui.moveTo((x1+x2)/2, (y1+y2)/2)
+        #pyautogui.moveTo((x1+x2)/2, (y1+y2)/2)
         has_detected = True
         
     elif has_detected:
         
-        pyautogui.moveTo(385, 570) # Back to the main cookie
+        #pyautogui.moveTo(385, 570) # Back to the main cookie
         has_detected = False
 
     displayImage = pygame.image.frombuffer(img.tobytes(), img.shape[1::-1],"BGR")
