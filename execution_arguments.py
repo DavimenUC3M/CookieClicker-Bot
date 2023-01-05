@@ -25,7 +25,7 @@ def get_arguments():
     parser.add_argument("-ac", "--auto_clicker",
                         action="store_true",
                         help="Choose whether you want or not the autoclick functionality at start." +
-                             "Start with active by default")
+                             "Start with auto clicker by default")
 
     parser.add_argument("-tk", "--toggle_key",
                         type=str,

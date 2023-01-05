@@ -9,13 +9,14 @@ import onnxruntime as ort
 import pygame
 import dxcam
 import threading
+import sys
 
 from pynput.mouse import Button, Controller
 from pynput.keyboard import Listener, KeyCode, Key
 
 from execution_arguments import get_arguments
 
-# Get arguments variables
+# Get arguments variables #TODO add color messages with the arguments input and more useful information
 
 my_args = get_arguments()
 
@@ -45,16 +46,16 @@ for i in function_keys:
     if selected_toggle_key == i[0]:
         TOGGLE_KEY = i[1]
 
-def getFrame(width=640,height=640):
-    
+def getFrame(width=640, height=640):
+
     frame_array = camera.get_latest_frame()
     
     frame = PIL.Image.fromarray(frame_array)
 
-    resized = frame.resize((width,height))
+    resized = frame.resize((width, height))
     resized = np.array(resized).astype(np.float32) # Converting to the expected float 32 input
-    resized = np.expand_dims(resized.transpose(2,0,1),0) # Setting dimensions to (1,3,640,640)
-    resized = resized/255 # Normalizing values 
+    resized = np.expand_dims(resized.transpose(2, 0, 1), 0) # Setting dimensions to (1,3,640,640)
+    resized /= 255 # Normalizing values
     
     return frame_array,resized
 
@@ -105,7 +106,7 @@ has_detected = True
 
 # Creating clicker thread
 
-centered = False # Initializing the variable
+centered = False # Variable that tells if the click is centered on the big cookie or not, being not centered means not to spam clicks
 
 mouse = Controller()
 
@@ -113,15 +114,22 @@ mouse = Controller()
 click_thread = threading.Thread(target=clicker, daemon=True)  # A Daemon thread kills it when the main thread ends
 click_thread.start()
 
-# Start the loop
+if activate_rtv:
+    pygame.init()
+    surface = pygame.display.set_mode((window_width, window_height))
+    pygame.display.set_caption("Cookie Clicker Bot")
+    pygame_font = pygame.font.Font('freesansbold.ttf', 32)
 
+
+# Start the loop
+FPS = 0.0
 with Listener(on_press=toggle_event) as listener: # Starting the listener thread
     while True:
 
-        if activate_rtv: # Activates pygame window
-            pygame.init()
-            surface = pygame.display.set_mode((window_width, window_height))
-            pygame.display.set_caption("Image")
+        if activate_rtv:
+            pygame.display.update()
+
+        loop_time = time.time()
 
         original, resized = getFrame(image_width, image_height)
 
@@ -177,7 +185,24 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
         if activate_rtv:
             displayImage = pygame.image.frombuffer(img.tobytes(), img.shape[1::-1],"BGR")
             surface.blit(displayImage, (0, 0))
-            pygame.display.update()
+            # create a text surface object, on which text is drawn on it.
+            text = pygame_font.render("FPS: " + str(FPS), True, (0, 170, 0), (0, 0, 0))
+            # create a rectangular object for the text surface object
+            textRect = text.get_rect()
+            # set the center of the rectangular object.
+            textRect.center = (window_width // 18, window_height // 1.02)
+            surface.blit(text, textRect)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit(0) # Ends the code
+
+        loop_time = time.time() - loop_time
+        FPS = round(1/loop_time, 0) # Calculates the frequency of each iteration
+
+
+
+
 
     
 
