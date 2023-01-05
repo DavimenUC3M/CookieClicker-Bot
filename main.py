@@ -17,6 +17,9 @@ from pynput.keyboard import Listener, KeyCode, Key
 from execution_arguments import get_arguments
 
 print("\n")
+print("\n")
+print("\n")
+
 class bcolors(object): # Class to print in colors on the console
     MAGENTA = "\033[95m"
     BLUE = "\033[94m"
@@ -34,6 +37,8 @@ cookie_banner = open("art/cookie_banner.txt", "r")
 print(cookie_logo.read() + "\n")
 print(bcolors.YELLOW + cookie_banner.read() + bcolors.ENDC)
 print(bcolors.MAGENTA + "Version 0.0.2" + bcolors.ENDC + "\n")
+
+time.sleep(1) # Just to appreciate the logo and the banner xd
 
 # Get arguments variables
 my_args = get_arguments()
