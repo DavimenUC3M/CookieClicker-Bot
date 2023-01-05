@@ -28,6 +28,8 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
         template = cv2.imread(template_path + "Big_cookie.png")
     elif template == "Silent_parcel":
         template = cv2.imread(template_path + "Silent_parcel.png")
+    elif template == "Open_garden":
+        template = cv2.imread(template_path + "Open_garden.png")
     elif template == "Close_garden":
         template = cv2.imread(template_path + "Close_garden.png")
     elif template == "Farm_icon":
@@ -36,10 +38,20 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
         template = cv2.imread(template_path + "crop_remover.png")
     elif template == "Target_seed":
         template = cv2.imread(template_path + "target_seed.png")
+    elif template == "Target_plant1":
+        template = cv2.imread(template_path + "target_plant1.png")
+    elif template == "Target_plant2":
+        template = cv2.imread(template_path + "target_plant2.png")
+    elif template == "Target_plant3":
+        template = cv2.imread(template_path + "target_plant3.png")
+    elif template == "Target_plant4":
+        template = cv2.imread(template_path + "target_plant4.png")
+    elif template == "Target_plant5":
+        template = cv2.imread(template_path + "target_plant5.png") # At least, in the case of the golden trebol, plant4 and plant5 are both equivalent to this algorithm
     elif template == "Speed_compost":
         template = cv2.imread(template_path + "Speed_compost.png")
-    elif template == "Boost_compost":
-        template = cv2.imread(template_path + "Boost_compost.png")
+    elif template == "Slow_compost":
+        template = cv2.imread(template_path + "Slow_compost.png")
     elif template == "Holes":
         template_path += "Garden_holes"
         holes_dirs = os.listdir(template_path) # This case is special and has its own pipeline
@@ -72,7 +84,7 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
                 cv2.rectangle(img_with_bx, pt, (pt[0] + w, pt[1] + h), (0, 255, 0), 2)
                 coord = ((pt[0] + pt[0] + w) // 2, (pt[1] + pt[1] + h) // 2)
                 if verbose:
-                    print("Center coords: ", coord)
+                    print("Center coords: ", coord, "Similarity:", template_match[pt[1], pt[0]])
                 center_coords.append(coord)
             center_coords.reverse()
 

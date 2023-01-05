@@ -36,7 +36,6 @@ def getFrame(width=640, height=640):
 
 
 def clicker():
-
     while True:
         if clicking and centered:
             mouse.click(Button.left, 1)
@@ -44,12 +43,19 @@ def clicker():
 
 
 def toggle_event(key):
+    global big_cookie_coords
     global TOGGLE_KEY
+    global first_toggle
+    global clicking
+
     if key == TOGGLE_KEY:
-        global clicking
+
+        if first_toggle:
+            big_cookie_coords = template_matching(camera.get_latest_frame(), template="Big_cookie", resolution=1440, threshold=-1, RGB=True, verbose=False)
+            first_toggle = False
 
         if not clicking:
-            mouse.position = (385, 570)  # Back to the main cookie
+            mouse.position = big_cookie_coords  # Back to the main cookie
 
         clicking = not clicking
 
@@ -83,6 +89,7 @@ my_args = get_arguments()
 window_width = my_args.real_time_viewer_width
 window_height = my_args.real_time_viewer_height
 
+big_cookie_coords = ()
 
 activate_rtv = not my_args.real_time_viewer # Show real time viewer
 clicking = not my_args.auto_clicker
@@ -154,6 +161,8 @@ original_res = np.array(camera.get_latest_frame()).shape
 print(bcolors.CYAN + "Virtual camera ready" + bcolors.ENDC)
 
 has_detected = True
+
+first_toggle = True # Get the big cookie coordinates on the first toggle
 
 # Creating clicker thread
 
@@ -252,8 +261,22 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
         loop_time = time.time() - loop_time
         FPS = round(1/loop_time, 0) # Calculates the frequency of each iteration
 
-
-
+#TODO Implementar algoritmo jardin (5 mins entre runs timepo optimo a priori ya que es el tiempo antes de que se acaben dos abonos rapidos)
+# 1 Bloquear autocentrado y desactivar clicks, nueva variable?
+# 2 Cerrar todas las pestañas usando el boton silenciar, loopear hasta que no se detecten mas pestañas por cerrar
+# 3 Abrir las granjas utilizando el icono de granja
+# 4 Abrir jardin, cerrar jardin, abrir jardin para evitar el big de posicionamiento de las casillas
+# 5 Detectar agujeros libres en el jardin
+# 6.1 Si se detectan mas de un x% libres se procede a replantar
+    # 7.1 Utilizar el crop remover para quitar los posibles cultivos restantes
+    # 8.1 Plantar el cultivo selecionado con el target_seed
+    # 9.1 Cambiar al abono de crecimiento rapido
+#6.2 Si se detectan menos de un x% libres se detectan cuantas target plants estan maduras
+    #7.2.1 Si se detectan mas de un x% maduras
+        #8.2.1 Se cambia al abono lento
+        #9.2.1 Se cierra el jardin y las granjas y se repite el proceso en x tiempo
+    #7.2.2 Si se detectan menos de un x% maduras
+        #8.2.2 Se cierra el jardin y las granjas y se repite el proceso en x tiempo
 
 
     
