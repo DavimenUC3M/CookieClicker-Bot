@@ -80,6 +80,10 @@ target/
 # Pycharm
 .idea
 
+# Raw Dataset
+
+Cookie_Cliker_Dataset/Cookie Clicker Raw Dataset
+
 # IPython
 profile_default/
 ipython_config.py

@@ -5,10 +5,10 @@ def get_arguments():
     optional_args = parser._action_groups.pop()
     parser._action_groups.append(optional_args)
 
-    parser.add_argument("-rtv","--real_time_viewer",
+    parser.add_argument("-rtv" ,"--real_time_viewer",
                         action="store_true",
                         help="If added, a pygame window will show the in real time object detector." +
-                        "Not showed by default")
+                        "Showed by default")
 
     parser.add_argument("-rtvw", "--real_time_viewer_width",
                         type=int,
@@ -24,8 +24,14 @@ def get_arguments():
 
     parser.add_argument("-ac", "--auto_clicker",
                         action="store_true",
-                        help="Choose whether you want or not the autoclick functionality." +
-                             "Active by default")
+                        help="Choose whether you want or not the autoclick functionality at start." +
+                             "Start with active by default")
+
+    parser.add_argument("-tk", "--toggle_key",
+                        type=str,
+                        help="Select the key you need to press in order to activate/deactivate the autoclick function." +
+                             "0 by default",
+                        default="f10")
 
     parser.add_argument("-aim", "--auto_aim",
                         action="store_true",
