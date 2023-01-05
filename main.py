@@ -134,7 +134,7 @@ ort_sess = ort.InferenceSession('model.onnx', providers=['CUDAExecutionProvider'
 print(bcolors.CYAN + "Finished reading model" + bcolors.ENDC)
 
 
-print(bcolors.CYAN + "Starting virtual camera..." + bcolors.ENDC)
+print(bcolors.CYAN + "Starting virtual camera..." + bcolors.ENDC + "\n")
 camera = dxcam.create(device_idx=0, output_idx=0)
 
 image_width = 640
@@ -237,7 +237,7 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
 
         if has_detected:
             if activate_auto_aim & clicking:
-                mouse.position = (385, 570) # Back to the main cookie #TODO get main cookie coords
+                mouse.position = big_cookie_coords
                 time.sleep(0.01)
                 centered = True
             has_detected = False
