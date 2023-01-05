@@ -1,8 +1,8 @@
 import torch
 import numpy as np
-from PIL import Image
 import cv2
 import time
+from PIL import Image
 import onnx
 import onnxruntime as ort
 import pygame
@@ -10,9 +10,10 @@ import dxcam
 import threading
 import sys
 
-
 from pynput.mouse import Button, Controller
 from pynput.keyboard import Listener, KeyCode, Key
+
+from functions import template_matching
 
 from execution_arguments import get_arguments
 
@@ -20,6 +21,41 @@ print("\n")
 print("\n")
 print("\n")
 
+############################################################################################################
+def getFrame(width=640, height=640):
+
+    frame_array = camera.get_latest_frame()
+    frame = Image.fromarray(frame_array)
+
+    resized = frame.resize((width, height))
+    resized = np.array(resized).astype(np.float32)  # Converting to the expected float 32 input
+    resized = np.expand_dims(resized.transpose(2, 0, 1), 0)  # Setting dimensions to (1,3,640,640)
+    resized /= 255  # Normalizing values
+
+    return frame_array, resized
+
+
+def clicker():
+
+    while True:
+        if clicking and centered:
+            mouse.click(Button.left, 1)
+        time.sleep(0.001)
+
+
+def toggle_event(key):
+    global TOGGLE_KEY
+    if key == TOGGLE_KEY:
+        global clicking
+
+        if not clicking:
+            mouse.position = (385, 570)  # Back to the main cookie
+
+        clicking = not clicking
+
+############################################################################################################
+
+# Color declaration and printing starting logo and banner
 class bcolors(object): # Class to print in colors on the console
     MAGENTA = "\033[95m"
     BLUE = "\033[94m"
@@ -39,6 +75,7 @@ print(bcolors.YELLOW + cookie_banner.read() + bcolors.ENDC)
 print(bcolors.MAGENTA + "Version 0.0.2" + bcolors.ENDC + "\n")
 
 time.sleep(1) # Just to appreciate the logo and the banner xd
+
 
 # Get arguments variables
 my_args = get_arguments()
@@ -77,38 +114,6 @@ print(bcolors.CYAN + f"Start with autoclicker active: {clicking}" + bcolors.ENDC
 print(bcolors.CYAN + f"Autoclicker toggle key: {selected_toggle_key}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Auto aim: {activate_auto_aim}" + bcolors.ENDC)
 print("\n")
-
-
-
-def getFrame(width=640, height=640):
-
-    frame_array = camera.get_latest_frame()
-    frame = Image.fromarray(frame_array)
-
-    resized = frame.resize((width, height))
-    resized = np.array(resized).astype(np.float32) # Converting to the expected float 32 input
-    resized = np.expand_dims(resized.transpose(2, 0, 1), 0) # Setting dimensions to (1,3,640,640)
-    resized /= 255 # Normalizing values
-    
-    return frame_array,resized
-
-def clicker():
-    while True:
-        if clicking and centered:
-            mouse.click(Button.left, 1)
-        time.sleep(0.001)
-
-
-def toggle_event(key):
-    if key == TOGGLE_KEY:
-        global clicking
-
-        if not clicking:
-            mouse.position = (385, 570)  # Back to the main cookie
-
-        clicking = not clicking
-
-
 
 
 # Loading ONNX model
@@ -155,7 +160,6 @@ has_detected = True
 centered = False # Variable that tells if the click is centered on the big cookie or not, being not centered means not to spam clicks
 
 mouse = Controller()
-
 
 click_thread = threading.Thread(target=clicker, daemon=True)  # A Daemon thread kills it when the main thread ends
 click_thread.start()
