@@ -10,6 +10,7 @@ dependencies:
   - pytorch=1.13.1
   - torchvision>=0.8.1,!=0.13.0
   - cuda-toolkit=11.7.1
+  - cudatoolkit
   - scikit-learn>=0.19.2
   - pip:
     - matplotlib>=3.2.2

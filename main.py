@@ -1,9 +1,8 @@
 import torch
 import numpy as np
-import PIL
+from PIL import Image
 import cv2
 import time
-import pyautogui
 import onnx
 import onnxruntime as ort
 import pygame
@@ -11,13 +10,32 @@ import dxcam
 import threading
 import sys
 
+
 from pynput.mouse import Button, Controller
 from pynput.keyboard import Listener, KeyCode, Key
 
 from execution_arguments import get_arguments
 
-# Get arguments variables #TODO add color messages with the arguments input and more useful information
+print("\n")
+class bcolors(object): # Class to print in colors on the console
+    MAGENTA = "\033[95m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    YELLOW = '\033[33m'
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+    BLACK = "\033[90m"
+    CYAN = "\033[96m"
 
+cookie_logo = open("art/cookie_art.ans", "r")
+cookie_banner = open("art/cookie_banner.txt", "r")
+print(cookie_logo.read() + "\n")
+print(bcolors.YELLOW + cookie_banner.read() + bcolors.ENDC)
+print(bcolors.MAGENTA + "Version 0.0.2" + bcolors.ENDC + "\n")
+
+# Get arguments variables
 my_args = get_arguments()
 
 window_width = my_args.real_time_viewer_width
@@ -46,11 +64,21 @@ for i in function_keys:
     if selected_toggle_key == i[0]:
         TOGGLE_KEY = i[1]
 
+print(bcolors.CYAN + bcolors.BOLD + bcolors.UNDERLINE + "CONFIG" + bcolors.ENDC)
+print(bcolors.CYAN + f"Show pygame window: {activate_rtv}" + bcolors.ENDC)
+print(bcolors.CYAN + f"Pygame window width: {window_width}" + bcolors.ENDC)
+print(bcolors.CYAN + f"Pygame window height: {window_height}" + bcolors.ENDC)
+print(bcolors.CYAN + f"Start with autoclicker active: {clicking}" + bcolors.ENDC)
+print(bcolors.CYAN + f"Autoclicker toggle key: {selected_toggle_key}" + bcolors.ENDC)
+print(bcolors.CYAN + f"Auto aim: {activate_auto_aim}" + bcolors.ENDC)
+print("\n")
+
+
+
 def getFrame(width=640, height=640):
 
     frame_array = camera.get_latest_frame()
-    
-    frame = PIL.Image.fromarray(frame_array)
+    frame = Image.fromarray(frame_array)
 
     resized = frame.resize((width, height))
     resized = np.array(resized).astype(np.float32) # Converting to the expected float 32 input
@@ -75,10 +103,21 @@ def toggle_event(key):
 
         clicking = not clicking
 
+
+
+
+# Loading ONNX model
+
+print(bcolors.CYAN + "Loading ONNX model..." + bcolors.ENDC)
+
 onnx_model = onnx.load("model.onnx")
 onnx.checker.check_model("model.onnx")
 ort_sess = ort.InferenceSession('model.onnx', providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
 
+print(bcolors.CYAN + "Finished reading model" + bcolors.ENDC)
+
+
+print(bcolors.CYAN + "Starting virtual camera..." + bcolors.ENDC)
 camera = dxcam.create(device_idx=0, output_idx=0)
 
 image_width = 640
@@ -102,6 +141,8 @@ time.sleep(0.5) # Giving time to start the camera
 
 original_res = np.array(camera.get_latest_frame()).shape
 
+print(bcolors.CYAN + "Virtual camera ready" + bcolors.ENDC)
+
 has_detected = True
 
 # Creating clicker thread
@@ -115,6 +156,7 @@ click_thread = threading.Thread(target=clicker, daemon=True)  # A Daemon thread 
 click_thread.start()
 
 if activate_rtv:
+    print(bcolors.CYAN + "Launching pygame window" + bcolors.ENDC)
     pygame.init()
     surface = pygame.display.set_mode((window_width, window_height))
     pygame.display.set_caption("Cookie Clicker Bot")
@@ -176,7 +218,7 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
             has_detected = True
 
         if has_detected:
-            if clicking:
+            if activate_auto_aim & clicking:
                 mouse.position = (385, 570) # Back to the main cookie #TODO get main cookie coords
                 time.sleep(0.01)
                 centered = True
@@ -195,6 +237,7 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    print(bcolors.CYAN + "Closing app..." + bcolors.ENDC)
                     sys.exit(0) # Ends the code
 
         loop_time = time.time() - loop_time
