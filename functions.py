@@ -13,6 +13,8 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
     # RGB: If true transforms the image to the BGR format which is the preferred one for opencv library.
     # verbose: If true prints the obtained center coords along with a plot of the image with the bounding boxes of the detected items.
 
+    # returns the central screen coordinates of the detected objects
+
     img = img.copy() # Creating a copy of the image
     img_with_bx = img.copy() # image to add bounding boxes on top
 
@@ -60,16 +62,16 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
     else:
         template = template.copy() # If the input is an image keep it as it is
 
+    if RGB:
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        img_with_bx = cv2.cvtColor(img_with_bx, cv2.COLOR_RGB2BGR)
+
     coords = []
     for hole in holes_dirs:
 
         if hole != "empty":
             template = cv2.imread(template_path + "/" + hole)
 
-
-        if RGB:
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            img_with_bx = cv2.cvtColor(img_with_bx, cv2.COLOR_RGB2BGR)
 
         # read height and width of template image
         w, h = template.shape[1], template.shape[0]
@@ -86,10 +88,11 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
                 if verbose:
                     print("Center coords: ", coord, "Similarity:", template_match[pt[1], pt[0]])
                 center_coords.append(coord)
+                coords.append(center_coords)  # Only useful when looping through the holes templates
             center_coords.reverse()
 
-            if len(center_coords) == 1:
-                center_coords = center_coords[0]  # Unleashing the list
+            #if len(center_coords) == 1:
+                #center_coords = center_coords[0]  # Unleashing the list
 
         else:
             pt = list(zip(*np.where(template_match == np.amax(template_match))[::-1]))[0]

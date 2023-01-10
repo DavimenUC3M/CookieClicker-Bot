@@ -9,6 +9,7 @@ import pygame
 import dxcam
 import threading
 import sys
+import os
 
 from pynput.mouse import Button, Controller
 from pynput.keyboard import Listener, KeyCode, Key
@@ -37,7 +38,7 @@ def getFrame(width=640, height=640):
 
 def clicker():
     while True:
-        if clicking and centered:
+        if clicking and centered and not isGardening:
             mouse.click(Button.left, 1)
         time.sleep(0.001)
 
@@ -47,17 +48,173 @@ def toggle_event(key):
     global TOGGLE_KEY
     global first_toggle
     global clicking
+    global instaGarden
 
     if key == TOGGLE_KEY:
 
         if first_toggle:
-            big_cookie_coords = template_matching(camera.get_latest_frame(), template="Big_cookie", resolution=1440, threshold=-1, RGB=True, verbose=False)
+            big_cookie_coords = template_matching(camera.get_latest_frame(), template="Big_cookie",
+                                                  resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
             first_toggle = False
 
         if not clicking:
             mouse.position = big_cookie_coords  # Back to the main cookie
 
         clicking = not clicking
+
+    if key == GARDEN_TOGGLE_KEY:
+        instaGarden = True
+
+def garden_process():
+
+    global open_farm_coords
+    global open_garden_coords
+    global close_garden_coords
+    global crop_remover_coords
+    global target_seed_coords
+    global speed_compost_coords
+    global slow_compost_coords
+    global holes_coords
+
+    global isGardening
+    global has_detected
+    global gardening_crono
+    global auto_garden_extra_time
+
+    total_holes = len(os.listdir("Template_Matching_Imgs/" + str(
+                      original_res[0]) + "p/Garden_holes"))  # Getting the number of holes by counting the number of holes images
+
+    isGardening = True
+
+    # Step 1: Silence all parcels
+    silence_coords = ["first_iteration"]
+    while len(silence_coords) > 0:
+        silence_coords = template_matching(camera.get_latest_frame(), template="Silent_parcel",
+                                           resolution=original_res[0], threshold=0.85, RGB=True, verbose=False)
+
+        for coords in silence_coords:
+            mouse.position = coords
+            mouse.click(Button.left, 1)
+            time.sleep(0.01)
+        time.sleep(0.1)
+
+    # Step 2: Open farm and garden
+
+    if len(open_farm_coords) == 0:
+        open_farm_coords = template_matching(camera.get_latest_frame(), template="Farm_icon",
+                                             resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
+
+    mouse.position = open_farm_coords
+    mouse.click(Button.left, 1)
+    time.sleep(0.2)
+
+    if len(close_garden_coords) == 0:
+        close_garden_coords = template_matching(camera.get_latest_frame(), template="Close_garden",
+                                                resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
+
+    mouse.position = close_garden_coords
+    mouse.click(Button.left, 1)
+    time.sleep(0.2)
+
+    if len(open_garden_coords) == 0:
+        open_garden_coords = template_matching(camera.get_latest_frame(), template="Open_garden",
+                                               resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
+
+    mouse.position = open_garden_coords
+    mouse.click(Button.left, 1)
+    time.sleep(0.2)
+
+    # Step 3: Check the garden availability
+
+    growth_state_1 = template_matching(camera.get_latest_frame(), template="Target_plant1",
+                                       resolution=original_res[0], threshold=0.9, RGB=True, verbose=False)
+
+    growth_state_2 = template_matching(camera.get_latest_frame(), template="Target_plant2",
+                                       resolution=original_res[0], threshold=0.9, RGB=True, verbose=False)
+
+    growth_state_3 = template_matching(camera.get_latest_frame(), template="Target_plant3",
+                                       resolution=original_res[0], threshold=0.9, RGB=True, verbose=False)
+
+    growth_state_4 = template_matching(camera.get_latest_frame(), template="Target_plant4",
+                                       resolution=original_res[0], threshold=0.9, RGB=True, verbose=False)
+
+    planted_space = len(growth_state_1) + len(growth_state_2) + len(growth_state_3) + len(growth_state_4)
+
+    print(f"Empty holes: {total_holes-planted_space}")
+    print(f"Plants in growth state 1: {len(growth_state_1)}")
+    print(f"Plants in growth state 2: {len(growth_state_2)}")
+    print(f"Plants in growth state 3: {len(growth_state_3)}")
+    print(f"Plants in growth state 4: {len(growth_state_4)}")
+
+    free_space = (total_holes-planted_space)/total_holes  # Percentage of free space
+    print(f"Free_space: {round(free_space*100,2)}%")
+
+    if free_space >= 0.4: # Threshold to start new replanting
+        if len(crop_remover_coords) == 0:
+            time.sleep(0.2) # Ensuring it takes a good picture
+            crop_remover_coords = template_matching(camera.get_latest_frame(), template="Crop_remover",
+                                                    resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
+        if len(target_seed_coords) == 0:
+            target_seed_coords = template_matching(camera.get_latest_frame(), template="Target_seed",
+                                                   resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
+        if len(speed_compost_coords) == 0:
+            speed_compost_coords = template_matching(camera.get_latest_frame(), template="Speed_compost",
+                                                     resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
+
+        mouse.position = crop_remover_coords
+        mouse.click(Button.left, 1)
+        time.sleep(0.2)
+
+        if len(holes_coords) == 0:
+            time.sleep(0.2) # Ensuring it takes a good picture
+            holes_coords = template_matching(camera.get_latest_frame(), template="Holes",
+                                             resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
+
+        # Planting the seeds
+        for hole_coord in holes_coords:
+
+            mouse.position = target_seed_coords
+            mouse.click(Button.left, 1)
+            time.sleep(0.02)
+
+            mouse.position = hole_coord
+            mouse.click(Button.left, 1)
+            time.sleep(0.02)
+
+        mouse.position = speed_compost_coords
+        mouse.click(Button.left, 1)
+        time.sleep(0.1)
+
+
+    else:
+
+        percentage_of_growth = len(growth_state_4)/total_holes
+        print(f"Growth plants: {round(percentage_of_growth*100,2)}%")
+
+        if percentage_of_growth >= 0.6:
+            if len(slow_compost_coords) == 0:
+                slow_compost_coords = template_matching(camera.get_latest_frame(), template="Slow_compost",
+                                                        resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
+
+            mouse.position = slow_compost_coords
+            mouse.click(Button.left, 1)
+            time.sleep(0.001)
+
+            gardening_crono += auto_garden_extra_time # Adding extra time when while using the slow compost
+
+    # Closing garden
+    silence_coords = template_matching(camera.get_latest_frame(), template="Silent_parcel",
+                                       resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
+
+    mouse.position = silence_coords
+    mouse.click(Button.left, 1)
+    time.sleep(0.001)
+
+    isGardening = False  # Process ended
+    has_detected = True
+
+    print(bcolors.RED + "Finished checking garden!" + bcolors.ENDC + "\n")
+    return
 
 ############################################################################################################
 
@@ -78,7 +235,7 @@ cookie_logo = open("art/cookie_art.ans", "r")
 cookie_banner = open("art/cookie_banner.txt", "r")
 print(cookie_logo.read() + "\n")
 print(bcolors.YELLOW + cookie_banner.read() + bcolors.ENDC)
-print(bcolors.MAGENTA + "Version 0.0.2" + bcolors.ENDC + "\n")
+print(bcolors.MAGENTA + "Version 0.0.4" + bcolors.ENDC + "\n")
 
 time.sleep(1) # Just to appreciate the logo and the banner xd
 
@@ -86,18 +243,22 @@ time.sleep(1) # Just to appreciate the logo and the banner xd
 # Get arguments variables
 my_args = get_arguments()
 
-window_width = my_args.real_time_viewer_width
-window_height = my_args.real_time_viewer_height
+window_width = my_args.real_time_window_width
+window_height = my_args.real_time_window_height
 
 big_cookie_coords = ()
 
-activate_rtv = not my_args.real_time_viewer # Show real time viewer
+activate_rtv = not my_args.real_time_window # Show real time viewer
 clicking = not my_args.auto_clicker
 activate_auto_aim = not my_args.auto_aim
+activate_auto_garden = my_args.auto_garden
+auto_garden_check = my_args.auto_garden_check # How much time we need to check the garden when using the fast compost
+auto_garden_extra_time = my_args.auto_garden_boost # How much to add in seconds when using the slow compost
 
 
 # Select the toggle key that activates/deactivates autoclicking
 selected_toggle_key = my_args.toggle_key.lower()
+selected_garde_toggle_key= my_args.instagarden_toggle_key.lower()
 
 function_keys = [("f1", Key.f1), ("f2", Key.f2),
                  ("f3", Key.f3), ("f4", Key.f4),
@@ -108,10 +269,13 @@ function_keys = [("f1", Key.f1), ("f2", Key.f2),
 
 
 TOGGLE_KEY = KeyCode(char=selected_toggle_key)
+GARDEN_TOGGLE_KEY = KeyCode(char=selected_garde_toggle_key)
 
 for i in function_keys:
     if selected_toggle_key == i[0]:
         TOGGLE_KEY = i[1]
+    if selected_garde_toggle_key == i[0]:
+        GARDEN_TOGGLE_KEY = i[1]
 
 print(bcolors.CYAN + bcolors.BOLD + bcolors.UNDERLINE + "CONFIG" + bcolors.ENDC)
 print(bcolors.CYAN + f"Show pygame window: {activate_rtv}" + bcolors.ENDC)
@@ -181,6 +345,21 @@ if activate_rtv:
     pygame_font = pygame.font.Font('freesansbold.ttf', 32)
 
 
+# Initialize garden variables
+instaGarden = False
+isGardening = False # Stops auto clicker when gardening
+gardening_crono = 0 # Starting the timer to perform the gardening (checks the garden on the first toggle)
+
+# The first time the garden process occurs, the coords of the static objects are gathered with the template mathcing, the following times, these are already stored and there is no need to recalculate them.
+open_farm_coords = []
+open_garden_coords = []
+close_garden_coords = []
+crop_remover_coords = []
+target_seed_coords = []
+speed_compost_coords = []
+slow_compost_coords = []
+holes_coords = []
+
 # Start the loop
 FPS = 0.0
 with Listener(on_press=toggle_event) as listener: # Starting the listener thread
@@ -188,6 +367,13 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
 
         if activate_rtv:
             pygame.display.update()
+
+        if (activate_auto_garden and (time.time()-gardening_crono > auto_garden_check) and clicking) or instaGarden:
+            instaGarden = False
+            print("\n" + bcolors.RED + "Checking garden..." + bcolors.ENDC)
+            garden_thread = threading.Thread(target=garden_process, daemon=True)
+            garden_thread.start()
+            gardening_crono = time.time()
 
         loop_time = time.time()
 
@@ -214,19 +400,17 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
                 classes_all.append(int(outputs[0][i][5]))
                 confidences.append(round(outputs[0][i][6], 2))
 
-
-            for x1,y1,x2,y2,classes,confidence in zip(x1_all,y1_all,x2_all,y2_all,classes_all,confidences):
-                cv2.rectangle(img, (int(x1),int(y1)), (int(x2),int(y2)), classes_color_dict[classes])
-                cv2.putText(img,classes_dict[classes] + ": " + str(confidence),(int(x1),int(y1)-8),
-                            font, 0.6,classes_color_dict[classes],2,cv2.LINE_AA)
-
+            for x1, y1, x2, y2, classes, confidence in zip(x1_all, y1_all, x2_all, y2_all, classes_all, confidences):
+                cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), classes_color_dict[classes])
+                cv2.putText(img, classes_dict[classes] + ": " + str(confidence), (int(x1), int(y1)-8),
+                            font, 0.6, classes_color_dict[classes], 2, cv2.LINE_AA)
 
             x1 = original_res[1] * x1_all[0] / window_width
             x2 = original_res[1] * x2_all[0] / window_width
             y1 = original_res[0] * y1_all[0] / window_height
             y2 = original_res[0] * y2_all[0] / window_height
 
-            if activate_auto_aim and clicking:
+            if activate_auto_aim and clicking and not isGardening:
                 centered = False
                 time.sleep(0.01)
                 mouse.position = ((x1+x2)/2, (y1+y2)/2)
@@ -236,14 +420,14 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
             has_detected = True
 
         if has_detected:
-            if activate_auto_aim & clicking:
+            if activate_auto_aim and clicking and not isGardening:
                 mouse.position = big_cookie_coords
                 time.sleep(0.01)
                 centered = True
             has_detected = False
 
         if activate_rtv:
-            displayImage = pygame.image.frombuffer(img.tobytes(), img.shape[1::-1],"BGR")
+            displayImage = pygame.image.frombuffer(img.tobytes(), img.shape[1::-1], "BGR")
             surface.blit(displayImage, (0, 0))
             # create a text surface object, on which text is drawn on it.
             text = pygame_font.render("FPS: " + str(FPS), True, (0, 170, 0), (0, 0, 0))
@@ -252,6 +436,27 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
             # set the center of the rectangular object.
             textRect.center = (window_width // 18, window_height // 1.02)
             surface.blit(text, textRect)
+            if activate_auto_garden:
+                remaining_time_garden = auto_garden_check - (time.time() - gardening_crono)
+
+                if not isGardening and remaining_time_garden > 0:
+
+                    minutes = str(int(remaining_time_garden // 60))
+                    seconds = str(int(remaining_time_garden % 60))
+
+                    if int(seconds) < 10:
+                        seconds = "0" + seconds
+                    if int(minutes) < 10:
+                        minutes = "0" + minutes
+
+                    text = pygame_font.render(f"Garden check in {minutes}:{seconds}", True, (0, 170, 0), (0, 0, 0))
+
+                else:
+                    text = pygame_font.render(f"Gardening Active", True, (0, 170, 0), (0, 0, 0))
+
+                textRect = text.get_rect()
+                textRect.center = (window_width // 1.2, window_height // 1.02)
+                surface.blit(text, textRect)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -261,23 +466,13 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
         loop_time = time.time() - loop_time
         FPS = round(1/loop_time, 0) # Calculates the frequency of each iteration
 
-#TODO Implementar algoritmo jardin (5 mins entre runs timepo optimo a priori ya que es el tiempo antes de que se acaben dos abonos rapidos)
-# 1 Bloquear autocentrado y desactivar clicks, nueva variable?
-# 2 Cerrar todas las pestañas usando el boton silenciar, loopear hasta que no se detecten mas pestañas por cerrar
-# 3 Abrir las granjas utilizando el icono de granja
-# 4 Abrir jardin, cerrar jardin, abrir jardin para evitar el big de posicionamiento de las casillas
-# 5 Detectar agujeros libres en el jardin
-# 6.1 Si se detectan mas de un x% libres se procede a replantar
-    # 7.1 Utilizar el crop remover para quitar los posibles cultivos restantes
-    # 8.1 Plantar el cultivo selecionado con el target_seed
-    # 9.1 Cambiar al abono de crecimiento rapido
-#6.2 Si se detectan menos de un x% libres se detectan cuantas target plants estan maduras
-    #7.2.1 Si se detectan mas de un x% maduras
-        #8.2.1 Se cambia al abono lento
-        #9.2.1 Se cierra el jardin y las granjas y se repite el proceso en x tiempo
-    #7.2.2 Si se detectan menos de un x% maduras
-        #8.2.2 Se cierra el jardin y las granjas y se repite el proceso en x tiempo
 
 
-    
+
+
+
+
+
+
+
 
