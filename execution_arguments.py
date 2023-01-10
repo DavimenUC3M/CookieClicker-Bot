@@ -59,8 +59,8 @@ def get_arguments():
     parser.add_argument("-agb", "--auto_garden_boost",
                         type=int,
                         help="Select the time in seconds added to the garden activation counter when using the slow compost" +
-                             "600 by default (10 mins)",
-                        default=600)
+                             "540 by default (9 mins)",
+                        default=540)
 
     cliargs = parser.parse_args()
     return cliargs

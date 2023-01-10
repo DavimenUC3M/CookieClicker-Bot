@@ -147,9 +147,12 @@ def garden_process():
     print(f"Plants in growth state 4: {len(growth_state_4)}")
 
     free_space = (total_holes-planted_space)/total_holes  # Percentage of free space
-    print(f"Free_space: {round(free_space*100,2)}%")
+    print(f"Free space: {round(free_space*100,2)}%")
 
     if free_space >= 0.4: # Threshold to start new replanting
+
+        print(bcolors.GREEN + f"Free space greater than 40%, replanting started..." + bcolors.ENDC)
+
         if len(crop_remover_coords) == 0:
             time.sleep(0.2) # Ensuring it takes a good picture
             crop_remover_coords = template_matching(camera.get_latest_frame(), template="Crop_remover",
@@ -191,7 +194,10 @@ def garden_process():
         percentage_of_growth = len(growth_state_4)/total_holes
         print(f"Growth plants: {round(percentage_of_growth*100,2)}%")
 
-        if percentage_of_growth >= 0.6:
+        if percentage_of_growth >= 0.4:
+
+            print(bcolors.GREEN + f"Mature plants greater than 40%, changing compost to slow..." + bcolors.ENDC)
+
             if len(slow_compost_coords) == 0:
                 slow_compost_coords = template_matching(camera.get_latest_frame(), template="Slow_compost",
                                                         resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
@@ -201,6 +207,9 @@ def garden_process():
             time.sleep(0.001)
 
             gardening_crono += auto_garden_extra_time # Adding extra time when while using the slow compost
+
+        else:
+            print(bcolors.GREEN + f"No actions required for garden" + bcolors.ENDC)
 
     # Closing garden
     silence_coords = template_matching(camera.get_latest_frame(), template="Silent_parcel",
@@ -213,7 +222,7 @@ def garden_process():
     isGardening = False  # Process ended
     has_detected = True
 
-    print(bcolors.RED + "Finished checking garden!" + bcolors.ENDC + "\n")
+    print(bcolors.GREEN + "Finished checking garden!" + bcolors.ENDC + "\n")
     return
 
 ############################################################################################################
@@ -258,7 +267,7 @@ auto_garden_extra_time = my_args.auto_garden_boost # How much to add in seconds 
 
 # Select the toggle key that activates/deactivates autoclicking
 selected_toggle_key = my_args.toggle_key.lower()
-selected_garde_toggle_key= my_args.instagarden_toggle_key.lower()
+selected_garden_toggle_key= my_args.instagarden_toggle_key.lower()
 
 function_keys = [("f1", Key.f1), ("f2", Key.f2),
                  ("f3", Key.f3), ("f4", Key.f4),
@@ -269,12 +278,12 @@ function_keys = [("f1", Key.f1), ("f2", Key.f2),
 
 
 TOGGLE_KEY = KeyCode(char=selected_toggle_key)
-GARDEN_TOGGLE_KEY = KeyCode(char=selected_garde_toggle_key)
+GARDEN_TOGGLE_KEY = KeyCode(char=selected_garden_toggle_key)
 
 for i in function_keys:
     if selected_toggle_key == i[0]:
         TOGGLE_KEY = i[1]
-    if selected_garde_toggle_key == i[0]:
+    if selected_garden_toggle_key == i[0]:
         GARDEN_TOGGLE_KEY = i[1]
 
 print(bcolors.CYAN + bcolors.BOLD + bcolors.UNDERLINE + "CONFIG" + bcolors.ENDC)
@@ -284,6 +293,11 @@ print(bcolors.CYAN + f"Pygame window height: {window_height}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Start with autoclicker active: {clicking}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Autoclicker toggle key: {selected_toggle_key}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Auto aim: {activate_auto_aim}" + bcolors.ENDC)
+print(bcolors.CYAN + f"Autogarden: {activate_auto_garden}" + bcolors.ENDC)
+if activate_auto_garden:
+    print(bcolors.CYAN + f"Autogarden toggle key: {selected_garden_toggle_key}" + bcolors.ENDC)
+    print(bcolors.CYAN + f"Autogarden check every: {auto_garden_check}s" + bcolors.ENDC)
+    print(bcolors.CYAN + f"Autogarden slow compost extra time: {auto_garden_extra_time}s" + bcolors.ENDC)
 print("\n")
 
 
@@ -370,7 +384,7 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
 
         if (activate_auto_garden and (time.time()-gardening_crono > auto_garden_check) and clicking) or instaGarden:
             instaGarden = False
-            print("\n" + bcolors.RED + "Checking garden..." + bcolors.ENDC)
+            print("\n" + bcolors.GREEN + "Checking garden..." + bcolors.ENDC)
             garden_thread = threading.Thread(target=garden_process, daemon=True)
             garden_thread.start()
             gardening_crono = time.time()
