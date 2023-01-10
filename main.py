@@ -244,7 +244,7 @@ cookie_logo = open("art/cookie_art.ans", "r")
 cookie_banner = open("art/cookie_banner.txt", "r")
 print(cookie_logo.read() + "\n")
 print(bcolors.YELLOW + cookie_banner.read() + bcolors.ENDC)
-print(bcolors.MAGENTA + "Version 0.0.4" + bcolors.ENDC + "\n")
+print(bcolors.MAGENTA + "Version 0.1.0" + bcolors.ENDC + "\n")
 
 time.sleep(1) # Just to appreciate the logo and the banner xd
 
