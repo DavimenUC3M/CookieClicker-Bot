@@ -257,13 +257,13 @@ window_height = my_args.real_time_window_height
 
 big_cookie_coords = ()
 
-activate_rtv = not my_args.real_time_window # Show real time viewer
-clicking = not my_args.auto_clicker
+activate_rtw = not my_args.real_time_window # Show real time window
 activate_auto_aim = not my_args.auto_aim
 activate_auto_garden = my_args.auto_garden
 auto_garden_check = my_args.auto_garden_check # How much time we need to check the garden when using the fast compost
 auto_garden_extra_time = my_args.auto_garden_boost # How much to add in seconds when using the slow compost
 
+print_every_minutes = my_args.check_run_time_every
 
 # Select the toggle key that activates/deactivates autoclicking
 selected_toggle_key = my_args.toggle_key.lower()
@@ -287,10 +287,11 @@ for i in function_keys:
         GARDEN_TOGGLE_KEY = i[1]
 
 print(bcolors.CYAN + bcolors.BOLD + bcolors.UNDERLINE + "CONFIG" + bcolors.ENDC)
-print(bcolors.CYAN + f"Show pygame window: {activate_rtv}" + bcolors.ENDC)
-print(bcolors.CYAN + f"Pygame window width: {window_width}" + bcolors.ENDC)
-print(bcolors.CYAN + f"Pygame window height: {window_height}" + bcolors.ENDC)
-print(bcolors.CYAN + f"Start with autoclicker active: {clicking}" + bcolors.ENDC)
+print(bcolors.CYAN + f"Show pygame window: {activate_rtw}" + bcolors.ENDC)
+if activate_rtw:
+    print(bcolors.CYAN + f"Pygame window width: {window_width}" + bcolors.ENDC)
+    print(bcolors.CYAN + f"Pygame window height: {window_height}" + bcolors.ENDC)
+#print(bcolors.CYAN + f"Start with autoclicker active: {clicking}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Autoclicker toggle key: {selected_toggle_key}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Auto aim: {activate_auto_aim}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Autogarden: {activate_auto_garden}" + bcolors.ENDC)
@@ -309,10 +310,10 @@ onnx_model = onnx.load("model.onnx")
 onnx.checker.check_model("model.onnx")
 ort_sess = ort.InferenceSession('model.onnx', providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
 
-print(bcolors.CYAN + "Finished reading model" + bcolors.ENDC)
+print(bcolors.CYAN + "Finished reading model" + bcolors.ENDC + "\n" + "\n")
 
 
-print(bcolors.CYAN + "Starting virtual camera..." + bcolors.ENDC + "\n")
+print(bcolors.CYAN + "Starting virtual camera..." + bcolors.ENDC)
 camera = dxcam.create(device_idx=0, output_idx=0)
 
 image_width = 640
@@ -336,7 +337,7 @@ time.sleep(0.5) # Giving time to start the camera
 
 original_res = np.array(camera.get_latest_frame()).shape
 
-print(bcolors.CYAN + "Virtual camera ready" + bcolors.ENDC)
+print(bcolors.CYAN + "Virtual camera ready" + bcolors.ENDC + "\n" + "\n")
 
 has_detected = True
 
@@ -346,13 +347,15 @@ first_toggle = True # Get the big cookie coordinates on the first toggle
 
 centered = False # Variable that tells if the click is centered on the big cookie or not, being not centered means not to spam clicks
 
+clicking = False # Start the loop without auto clicking
+
 mouse = Controller()
 
 click_thread = threading.Thread(target=clicker, daemon=True)  # A Daemon thread kills it when the main thread ends
 click_thread.start()
 
-if activate_rtv:
-    print(bcolors.CYAN + "Launching pygame window" + bcolors.ENDC)
+if activate_rtw:
+    print(bcolors.CYAN + "Launching pygame window" + bcolors.ENDC + "\n" + "\n")
     pygame.init()
     surface = pygame.display.set_mode((window_width, window_height))
     pygame.display.set_caption("Cookie Clicker Bot")
@@ -376,10 +379,23 @@ holes_coords = []
 
 # Start the loop
 FPS = 0.0
+total_run_time = time.time()
+minute_check = 0
+
+print(bcolors.YELLOW + bcolors.BOLD + bcolors.UNDERLINE + "COOKIE BOT READY!" + bcolors.ENDC + "\n")
+print(bcolors.YELLOW + f"Press {selected_toggle_key} to activate the autoclicking functions" + bcolors.ENDC)
+if activate_auto_garden:
+    print(bcolors.YELLOW + f"Press {selected_garden_toggle_key} to manually activate the autogarden" + bcolors.ENDC + "\n")
+
+print(bcolors.RED + bcolors.BOLD + "WARNING: " + bcolors.ENDC +
+      bcolors.RED + "Ensure you have the cookie clicker app running on your main screen when " + bcolors.ENDC)
+
+print(bcolors.RED + "toggling the autoclick functions, otherwise undesired behaviours could happen" + bcolors.ENDC)
+
 with Listener(on_press=toggle_event) as listener: # Starting the listener thread
     while True:
 
-        if activate_rtv:
+        if activate_rtw:
             pygame.display.update()
 
         if (activate_auto_garden and (time.time()-gardening_crono > auto_garden_check) and clicking) or instaGarden:
@@ -440,7 +456,7 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
                 centered = True
             has_detected = False
 
-        if activate_rtv:
+        if activate_rtw:
             displayImage = pygame.image.frombuffer(img.tobytes(), img.shape[1::-1], "BGR")
             surface.blit(displayImage, (0, 0))
             # create a text surface object, on which text is drawn on it.
@@ -474,8 +490,26 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    print(bcolors.CYAN + "Closing app..." + bcolors.ENDC)
+                    print(bcolors.CYAN + "Closing..." + bcolors.ENDC)
                     sys.exit(0) # Ends the code
+
+        run_time = time.time() - total_run_time
+        run_time_hours = int(run_time / 3600)
+        run_time_minutes = int(run_time / 3600 % 1 * 60)
+        run_time_seconds = int(run_time / 3600 % 1 * 60 % 1 * 60)
+
+        if (run_time_minutes + run_time_hours * 60) % print_every_minutes == 0 and run_time_minutes != minute_check:
+
+            minute_check = run_time_minutes
+
+            if run_time_seconds < 10:
+                run_time_seconds = "0" + str(run_time_seconds)
+            if run_time_minutes < 10:
+                run_time_minutes = "0" + str(run_time_minutes)
+            if run_time_hours < 10:
+                run_time_hours = "0" + str(run_time_hours)
+
+            print(bcolors.RED + f"Current run time: {run_time_hours}h:{run_time_minutes}m:{run_time_seconds}s" + bcolors.ENDC + "\n")
 
         loop_time = time.time() - loop_time
         FPS = round(1/loop_time, 0) # Calculates the frequency of each iteration

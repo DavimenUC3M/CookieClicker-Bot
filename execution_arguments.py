@@ -22,10 +22,10 @@ def get_arguments():
                              "720 by default",
                         default=720)
 
-    parser.add_argument("-ac", "--auto_clicker",
-                        action="store_true",
-                        help="Choose whether you want or not the autoclick functionality at start." +
-                             "Start with auto clicker by default")
+    #parser.add_argument("-ac", "--auto_clicker",
+                        #action="store_true",
+                        #help="Choose whether you want or not the autoclick functionality at start." +
+                             #"Start without auto clicker by default")
 
     parser.add_argument("-tk", "--toggle_key",
                         type=str,
@@ -49,7 +49,6 @@ def get_arguments():
                         help="Choose whether you want or not the autogarden functionality." +
                              "Not active by default")
 
-
     parser.add_argument("-agc", "--auto_garden_check",
                         type=int,
                         help="Select the time in seconds needed to check the garden" +
@@ -61,6 +60,12 @@ def get_arguments():
                         help="Select the time in seconds added to the garden activation counter when using the slow compost" +
                              "540 by default (9 mins)",
                         default=540)
+
+    parser.add_argument("-crte", "--check_run_time_every",
+                        type=int,
+                        help="Select every how many minutes you want a print of the total run time" +
+                             "Every 30 minutes by default",
+                        default=30)
 
     cliargs = parser.parse_args()
     return cliargs
