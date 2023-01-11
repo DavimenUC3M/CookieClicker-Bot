@@ -23,6 +23,8 @@ print("\n")
 print("\n")
 
 ############################################################################################################
+
+
 def getFrame(width=640, height=640):
 
     frame_array = camera.get_latest_frame()
@@ -64,6 +66,7 @@ def toggle_event(key):
 
     if key == GARDEN_TOGGLE_KEY:
         instaGarden = True
+
 
 def garden_process():
 
@@ -225,6 +228,40 @@ def garden_process():
     print(bcolors.GREEN + "Finished checking garden!" + bcolors.ENDC + "\n")
     return
 
+
+def check_stuck_state():
+    cross_coords = template_matching(camera.get_latest_frame(), template="Close_menu",
+                                            resolution=original_res[0], threshold=0.9, RGB=True, verbose=False)
+
+    if len(cross_coords) > 0:
+
+        print(bcolors.RED + "STUCK STATE DETECTED, PROCEEDING TO CLOSE MENU WINDOW" + bcolors.ENDC + "\n")
+
+        global clicking
+        global has_detected
+
+        clicking = False
+        time.sleep(0.01)
+        mouse.position = cross_coords[0]
+        mouse.click(Button.left, 1)
+        time.sleep(0.1)
+        clicking = True
+        has_detected = True
+
+    silence_coords = ["first_iteration"]
+    while len(silence_coords) > 0:
+        silence_coords = template_matching(camera.get_latest_frame(), template="Silent_parcel",
+                                           resolution=original_res[0], threshold=0.85, RGB=True, verbose=False)
+
+        for coords in silence_coords:
+            mouse.position = coords
+            mouse.click(Button.left, 1)
+            time.sleep(0.01)
+        time.sleep(0.1)
+
+    return
+
+
 ############################################################################################################
 
 # Color declaration and printing starting logo and banner
@@ -244,7 +281,7 @@ cookie_logo = open("art/cookie_art.ans", "r")
 cookie_banner = open("art/cookie_banner.txt", "r")
 print(cookie_logo.read() + "\n")
 print(bcolors.YELLOW + cookie_banner.read() + bcolors.ENDC)
-print(bcolors.MAGENTA + "Version 0.1.0" + bcolors.ENDC + "\n")
+print(bcolors.MAGENTA + "Version 0.1.1" + bcolors.ENDC + "\n")
 
 time.sleep(1) # Just to appreciate the logo and the banner xd
 
@@ -257,11 +294,13 @@ window_height = my_args.real_time_window_height
 
 big_cookie_coords = ()
 
-activate_rtw = not my_args.real_time_window # Show real time window
+activate_rtw = not my_args.real_time_window  # Show real time window
 activate_auto_aim = not my_args.auto_aim
 activate_auto_garden = my_args.auto_garden
-auto_garden_check = my_args.auto_garden_check # How much time we need to check the garden when using the fast compost
-auto_garden_extra_time = my_args.auto_garden_boost # How much to add in seconds when using the slow compost
+auto_garden_check = my_args.auto_garden_check  # How much time we need to check the garden when using the fast compost
+auto_garden_extra_time = my_args.auto_garden_boost  # How much to add in seconds when using the slow compost
+
+stuck_check_time = my_args.check_if_stuck_timer  # How much seconds need to pass in order to perform a stuck state check
 
 print_every_minutes = my_args.check_run_time_every
 
@@ -291,7 +330,7 @@ print(bcolors.CYAN + f"Show pygame window: {activate_rtw}" + bcolors.ENDC)
 if activate_rtw:
     print(bcolors.CYAN + f"Pygame window width: {window_width}" + bcolors.ENDC)
     print(bcolors.CYAN + f"Pygame window height: {window_height}" + bcolors.ENDC)
-#print(bcolors.CYAN + f"Start with autoclicker active: {clicking}" + bcolors.ENDC)
+# print(bcolors.CYAN + f"Start with autoclicker active: {clicking}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Autoclicker toggle key: {selected_toggle_key}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Auto aim: {activate_auto_aim}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Autogarden: {activate_auto_garden}" + bcolors.ENDC)
@@ -364,10 +403,11 @@ if activate_rtw:
 
 # Initialize garden variables
 instaGarden = False
-isGardening = False # Stops auto clicker when gardening
-gardening_crono = 0 # Starting the timer to perform the gardening (checks the garden on the first toggle)
+isGardening = False  # Stops auto clicker when gardening
+gardening_crono = 0  # Starting the timer to perform the gardening (checks the garden on the first toggle)
 
-# The first time the garden process occurs, the coords of the static objects are gathered with the template mathcing, the following times, these are already stored and there is no need to recalculate them.
+# The first time the garden process occurs, the coords of the static objects are gathered with the template matching,
+# the following times, these are already stored and there is no need to recalculate them.
 open_farm_coords = []
 open_garden_coords = []
 close_garden_coords = []
@@ -382,6 +422,8 @@ FPS = 0.0
 total_run_time = time.time()
 minute_check = 0
 
+anti_stuck_timer = 0  # Starting timer to check whether you are stuck on the menu or options or not
+
 print(bcolors.YELLOW + bcolors.BOLD + bcolors.UNDERLINE + "COOKIE BOT READY!" + bcolors.ENDC + "\n")
 print(bcolors.YELLOW + f"Press {selected_toggle_key} to activate the autoclicking functions" + bcolors.ENDC)
 if activate_auto_garden:
@@ -392,18 +434,27 @@ print(bcolors.RED + bcolors.BOLD + "WARNING: " + bcolors.ENDC +
 
 print(bcolors.RED + "toggling the autoclick functions, otherwise undesired behaviours could happen" + bcolors.ENDC)
 
-with Listener(on_press=toggle_event) as listener: # Starting the listener thread
-    while True:
+if activate_auto_garden:
+    print("\n" + bcolors.RED + bcolors.BOLD + bcolors.UNDERLINE + "OPEN THE GARDEN BEFORE STARTING" + bcolors.ENDC)
 
+with Listener(on_press=toggle_event) as listener:  # Starting the listener thread
+    while True:
         if activate_rtw:
             pygame.display.update()
 
         if (activate_auto_garden and (time.time()-gardening_crono > auto_garden_check) and clicking) or instaGarden:
             instaGarden = False
             print("\n" + bcolors.GREEN + "Checking garden..." + bcolors.ENDC)
+            check_stuck_state()  # Check if the game is stuck before checking the garden
             garden_thread = threading.Thread(target=garden_process, daemon=True)
             garden_thread.start()
             gardening_crono = time.time()
+
+        if (time.time() - anti_stuck_timer > stuck_check_time) and clicking and not isGardening:
+            check_stuck_thread = threading.Thread(target=check_stuck_state, daemon=True)
+            check_stuck_thread.start()
+            anti_stuck_timer = time.time()
+
 
         loop_time = time.time()
 
@@ -491,7 +542,7 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     print(bcolors.CYAN + "Closing..." + bcolors.ENDC)
-                    sys.exit(0) # Ends the code
+                    sys.exit(0)  # Ends the code
 
         run_time = time.time() - total_run_time
         run_time_hours = int(run_time / 3600)
@@ -512,7 +563,7 @@ with Listener(on_press=toggle_event) as listener: # Starting the listener thread
             print(bcolors.RED + f"Current run time: {run_time_hours}h:{run_time_minutes}m:{run_time_seconds}s" + bcolors.ENDC + "\n")
 
         loop_time = time.time() - loop_time
-        FPS = round(1/loop_time, 0) # Calculates the frequency of each iteration
+        FPS = round(1/loop_time, 0)  # Calculates the frequency of each iteration
 
 
 

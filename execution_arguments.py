@@ -67,5 +67,11 @@ def get_arguments():
                              "Every 30 minutes by default",
                         default=30)
 
+    parser.add_argument("-stuck", "--check_if_stuck_timer",
+                        type=int,
+                        help="Select every how many seconds you want to check if you are on the menu or options" +
+                             "Every minute by default",
+                        default=60)
+
     cliargs = parser.parse_args()
     return cliargs

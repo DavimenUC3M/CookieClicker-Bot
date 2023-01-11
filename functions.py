@@ -15,10 +15,10 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
 
     # returns the central screen coordinates of the detected objects
 
-    img = img.copy() # Creating a copy of the image
-    img_with_bx = img.copy() # image to add bounding boxes on top
+    img = img.copy()  # Creating a copy of the image
+    img_with_bx = img.copy()  # image to add bounding boxes on top
 
-    holes_dirs = ["empty"] # Initializing the variable in case Holes template is not selected
+    holes_dirs = ["empty"]  # Initializing the variable in case Holes template is not selected
 
     # Selecting the template
     if resolution == 1080:
@@ -49,18 +49,20 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
     elif template == "Target_plant4":
         template = cv2.imread(template_path + "target_plant4.png")
     elif template == "Target_plant5":
-        template = cv2.imread(template_path + "target_plant5.png") # At least, in the case of the golden trebol, plant4 and plant5 are both equivalent to this algorithm
+        template = cv2.imread(template_path + "target_plant5.png")  # At least, in the case of the golden trebol, plant4 and plant5 are both equivalent to this algorithm
     elif template == "Speed_compost":
         template = cv2.imread(template_path + "Speed_compost.png")
     elif template == "Slow_compost":
         template = cv2.imread(template_path + "Slow_compost.png")
+    elif template == "Close_menu":
+        template = cv2.imread(template_path + "close_menu.png")
     elif template == "Holes":
         template_path += "Garden_holes"
-        holes_dirs = os.listdir(template_path) # This case is special and has its own pipeline
+        holes_dirs = os.listdir(template_path)  # This case is special and has its own pipeline
         total_holes = len(holes_dirs)
 
     else:
-        template = template.copy() # If the input is an image keep it as it is
+        template = template.copy()  # If the input is an image keep it as it is
 
     if RGB:
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
@@ -71,7 +73,6 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
 
         if hole != "empty":
             template = cv2.imread(template_path + "/" + hole)
-
 
         # read height and width of template image
         w, h = template.shape[1], template.shape[0]
@@ -102,7 +103,7 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
 
             center_coords = ((pt[0] + pt[0] + w) // 2, (pt[1] + pt[1] + h) // 2)
 
-            coords.append(center_coords) # Only useful when looping through the holes templates
+            coords.append(center_coords)  # Only useful when looping through the holes templates
 
             if verbose:
                 print("Center coords: ", center_coords)
@@ -113,7 +114,7 @@ def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1,
 
 
     if hole != "empty":
-        coords = [x for x in coords if x] # Removing empty lists
+        coords = [x for x in coords if x]  # Removing empty lists
         return coords
 
     return center_coords
