@@ -5,6 +5,11 @@ def get_arguments():
     optional_args = parser._action_groups.pop()
     parser._action_groups.append(optional_args)
 
+    parser.add_argument("-tm", "--use_tiny_model",
+                        action="store_true",
+                        help="Choose whether you want to use the tiny onnx model (Recommended for slower PCs)." +
+                             "Not selected by default")
+
     parser.add_argument("-rtw" ,"--real_time_window",
                         action="store_true",
                         help="If added, a pygame window will show the in real time object detector." +

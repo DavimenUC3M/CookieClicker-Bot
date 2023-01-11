@@ -28,6 +28,7 @@ dependencies:
     - onnx>=1.9.0
     - onnxruntime-gpu
     - onnx-simplifier>=0.3.6
+    - onnxsim
     - ipython
     - psutil
     - dxcam

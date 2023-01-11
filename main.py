@@ -28,9 +28,8 @@ print("\n")
 def getFrame(width=640, height=640):
 
     frame_array = camera.get_latest_frame()
-    frame = Image.fromarray(frame_array)
 
-    resized = frame.resize((width, height))
+    resized = cv2.resize(frame_array, (width, height), interpolation=cv2.INTER_AREA)
     resized = np.array(resized).astype(np.float32)  # Converting to the expected float 32 input
     resized = np.expand_dims(resized.transpose(2, 0, 1), 0)  # Setting dimensions to (1,3,640,640)
     resized /= 255  # Normalizing values
@@ -230,6 +229,7 @@ def garden_process():
 
 
 def check_stuck_state():
+
     cross_coords = template_matching(camera.get_latest_frame(), template="Close_menu",
                                             resolution=original_res[0], threshold=0.9, RGB=True, verbose=False)
 
@@ -248,16 +248,23 @@ def check_stuck_state():
         clicking = True
         has_detected = True
 
+    found_parcels = False
     silence_coords = ["first_iteration"]
     while len(silence_coords) > 0:
         silence_coords = template_matching(camera.get_latest_frame(), template="Silent_parcel",
                                            resolution=original_res[0], threshold=0.85, RGB=True, verbose=False)
 
         for coords in silence_coords:
+            clicking = False
             mouse.position = coords
             mouse.click(Button.left, 1)
+            found_parcels = True
             time.sleep(0.01)
         time.sleep(0.1)
+
+        if found_parcels: # In the case it has silenced some parcels, the click will be centered
+            clicking = True
+            has_detected = True
 
     return
 
@@ -294,6 +301,8 @@ window_height = my_args.real_time_window_height
 
 big_cookie_coords = ()
 
+
+use_tiny_model = my_args.use_tiny_model
 activate_rtw = not my_args.real_time_window  # Show real time window
 activate_auto_aim = not my_args.auto_aim
 activate_auto_garden = my_args.auto_garden
@@ -334,8 +343,8 @@ if activate_rtw:
 print(bcolors.CYAN + f"Autoclicker toggle key: {selected_toggle_key}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Auto aim: {activate_auto_aim}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Autogarden: {activate_auto_garden}" + bcolors.ENDC)
+print(bcolors.CYAN + f"Start autogarden process key: {selected_garden_toggle_key}" + bcolors.ENDC)
 if activate_auto_garden:
-    print(bcolors.CYAN + f"Autogarden toggle key: {selected_garden_toggle_key}" + bcolors.ENDC)
     print(bcolors.CYAN + f"Autogarden check every: {auto_garden_check}s" + bcolors.ENDC)
     print(bcolors.CYAN + f"Autogarden slow compost extra time: {auto_garden_extra_time}s" + bcolors.ENDC)
 print("\n")
@@ -343,11 +352,16 @@ print("\n")
 
 # Loading ONNX model
 
-print(bcolors.CYAN + "Loading ONNX model..." + bcolors.ENDC)
+if use_tiny_model:
+    print(bcolors.CYAN + "Loading tiny ONNX model..." + bcolors.ENDC)
+    model_name = "model_mini.onnx"
+else:
+    print(bcolors.CYAN + "Loading ONNX model..." + bcolors.ENDC)
+    model_name = "model.onnx"
 
-onnx_model = onnx.load("model.onnx")
-onnx.checker.check_model("model.onnx")
-ort_sess = ort.InferenceSession('model.onnx', providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+onnx_model = onnx.load(model_name)
+onnx.checker.check_model(model_name)
+ort_sess = ort.InferenceSession(model_name, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
 
 print(bcolors.CYAN + "Finished reading model" + bcolors.ENDC + "\n" + "\n")
 
@@ -418,7 +432,7 @@ slow_compost_coords = []
 holes_coords = []
 
 # Start the loop
-FPS = 0.0
+FPS = []
 total_run_time = time.time()
 minute_check = 0
 
@@ -486,17 +500,31 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
                 cv2.putText(img, classes_dict[classes] + ": " + str(confidence), (int(x1), int(y1)-8),
                             font, 0.6, classes_color_dict[classes], 2, cv2.LINE_AA)
 
-            x1 = original_res[1] * x1_all[0] / window_width
-            x2 = original_res[1] * x2_all[0] / window_width
-            y1 = original_res[0] * y1_all[0] / window_height
-            y2 = original_res[0] * y2_all[0] / window_height
+                if len(outputs[0]) > 7:  # Cookie storm
+                    x1 = original_res[1] * x1 / window_width
+                    x2 = original_res[1] * x2 / window_width
+                    y1 = original_res[0] * y1 / window_height
+                    y2 = original_res[0] * y2 / window_height
 
-            if activate_auto_aim and clicking and not isGardening:
-                centered = False
-                time.sleep(0.01)
-                mouse.position = ((x1+x2)/2, (y1+y2)/2)
-                if clicking:
-                    mouse.click(Button.left, 1)
+                    if activate_auto_aim and clicking and not isGardening:
+                        centered = False
+                        time.sleep(0.01)
+                        mouse.position = ((x1 + x2) / 2, (y1 + y2) / 2)
+                        if clicking:
+                            mouse.click(Button.left, 1)
+
+            if len(outputs[0]) <= 7:  # Single cookie
+                x1 = original_res[1] * x1_all[0] / window_width
+                x2 = original_res[1] * x2_all[0] / window_width
+                y1 = original_res[0] * y1_all[0] / window_height
+                y2 = original_res[0] * y2_all[0] / window_height
+
+                if activate_auto_aim and clicking and not isGardening:
+                    centered = False
+                    time.sleep(0.01)
+                    mouse.position = ((x1+x2)/2, (y1+y2)/2)
+                    if clicking:
+                        mouse.click(Button.left, 1)
 
             has_detected = True
 
@@ -511,7 +539,9 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
             displayImage = pygame.image.frombuffer(img.tobytes(), img.shape[1::-1], "BGR")
             surface.blit(displayImage, (0, 0))
             # create a text surface object, on which text is drawn on it.
-            text = pygame_font.render("FPS: " + str(FPS), True, (0, 170, 0), (0, 0, 0))
+            text = pygame_font.render("FPS: " + str(0), True, (0, 170, 0), (0, 0, 0))
+            if len(FPS) >= 10:
+                text = pygame_font.render("FPS: " + str(int(np.mean(FPS))), True, (0, 170, 0), (0, 0, 0))
             # create a rectangular object for the text surface object
             textRect = text.get_rect()
             # set the center of the rectangular object.
@@ -563,7 +593,9 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
             print(bcolors.RED + f"Current run time: {run_time_hours}h:{run_time_minutes}m:{run_time_seconds}s" + bcolors.ENDC + "\n")
 
         loop_time = time.time() - loop_time
-        FPS = round(1/loop_time, 0)  # Calculates the frequency of each iteration
+        FPS.append(round(1/loop_time, 0))  # Calculates the frequency of each iteration
+        if len(FPS) > 10:
+            FPS.pop(0) # Removing the oldest item from the list
 
 
 
