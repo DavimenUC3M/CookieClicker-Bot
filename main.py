@@ -507,7 +507,9 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
                     y2 = original_res[0] * y2 / window_height
 
                     if activate_auto_aim and clicking and not isGardening:
-                        centered = False
+                        if centered:
+                            centered = False
+                            time.sleep(0.1)  # Just for security add extra time to properly deactivate clicks
                         time.sleep(0.01)
                         mouse.position = ((x1 + x2) / 2, (y1 + y2) / 2)
                         if clicking:
@@ -521,7 +523,7 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
 
                 if activate_auto_aim and clicking and not isGardening:
                     centered = False
-                    time.sleep(0.01)
+                    time.sleep(0.1)
                     mouse.position = ((x1+x2)/2, (y1+y2)/2)
                     if clicking:
                         mouse.click(Button.left, 1)
@@ -531,7 +533,7 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
         if has_detected:
             if activate_auto_aim and clicking and not isGardening:
                 mouse.position = big_cookie_coords
-                time.sleep(0.01)
+                time.sleep(0.1)  # Just for security add extra time to properly center the mouse
                 centered = True
             has_detected = False
 
