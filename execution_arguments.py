@@ -10,6 +10,12 @@ def get_arguments():
                         help="Choose whether you want to use the tiny onnx model (Recommended for slower PCs)." +
                              "Not selected by default")
 
+    parser.add_argument("-rt", "--run_type",
+                        type=str,
+                        help="Select if you want to run the NN on CUDA, TensorRT or CPU" +
+                             "CUDA by default",
+                        default="cuda")
+
     parser.add_argument("-rtw" ,"--real_time_window",
                         action="store_true",
                         help="If added, a pygame window will show the in real time object detector." +

@@ -10,6 +10,7 @@ import dxcam
 import threading
 import sys
 import os
+import site
 
 from pynput.mouse import Button, Controller
 from pynput.keyboard import Listener, KeyCode, Key
@@ -62,6 +63,11 @@ def toggle_event(key):
             mouse.position = big_cookie_coords  # Back to the main cookie
 
         clicking = not clicking
+
+        if clicking:
+            print(bcolors.RED + "Auto-clicker enabled" + bcolors.ENDC + "\n")
+        else:
+            print(bcolors.RED + "Auto-clicker disabled" + bcolors.ENDC + "\n")
 
     if key == GARDEN_TOGGLE_KEY:
         instaGarden = True
@@ -288,7 +294,7 @@ cookie_logo = open("art/cookie_art.ans", "r")
 cookie_banner = open("art/cookie_banner.txt", "r")
 print(cookie_logo.read() + "\n")
 print(bcolors.YELLOW + cookie_banner.read() + bcolors.ENDC)
-print(bcolors.MAGENTA + "Version 0.1.1" + bcolors.ENDC + "\n")
+print(bcolors.MAGENTA + "Version 0.1.2" + bcolors.ENDC + "\n")
 
 time.sleep(1) # Just to appreciate the logo and the banner xd
 
@@ -301,7 +307,7 @@ window_height = my_args.real_time_window_height
 
 big_cookie_coords = ()
 
-
+run_type = my_args.run_type.lower()
 use_tiny_model = my_args.use_tiny_model
 activate_rtw = not my_args.real_time_window  # Show real time window
 activate_auto_aim = not my_args.auto_aim
@@ -335,6 +341,7 @@ for i in function_keys:
         GARDEN_TOGGLE_KEY = i[1]
 
 print(bcolors.CYAN + bcolors.BOLD + bcolors.UNDERLINE + "CONFIG" + bcolors.ENDC)
+print(bcolors.CYAN + f"NN running in: {run_type}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Show pygame window: {activate_rtw}" + bcolors.ENDC)
 if activate_rtw:
     print(bcolors.CYAN + f"Pygame window width: {window_width}" + bcolors.ENDC)
@@ -352,6 +359,8 @@ print("\n")
 
 # Loading ONNX model
 
+
+
 if use_tiny_model:
     print(bcolors.CYAN + "Loading tiny ONNX model..." + bcolors.ENDC)
     model_name = "model_mini.onnx"
@@ -361,7 +370,28 @@ else:
 
 onnx_model = onnx.load(model_name)
 onnx.checker.check_model(model_name)
-ort_sess = ort.InferenceSession(model_name, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+
+if run_type == "cuda":
+
+    providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+
+elif run_type == "tensorrt":
+
+    # Get the cuDNN DLLs rute
+    cudnn_directory = os.path.join(site.getsitepackages()[-1], "torch", "lib")
+    # Get the tensorRT DLLs rute
+    tensorrt_dll_directory = os.path.abspath(os.path.join(sys.executable, os.pardir, "Library", "lib", "tensorrt"))
+    # Add to PATH both DLLs rutes
+    os.environ["PATH"] = (os.environ["PATH"] +
+                          ";" + tensorrt_dll_directory +
+                          ";" + cudnn_directory)
+
+    providers = ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
+
+else:
+    providers = ['CPUExecutionProvider']
+
+ort_sess = ort.InferenceSession(model_name, providers=providers)
 
 print(bcolors.CYAN + "Finished reading model" + bcolors.ENDC + "\n" + "\n")
 
@@ -540,15 +570,22 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
         if activate_rtw:
             displayImage = pygame.image.frombuffer(img.tobytes(), img.shape[1::-1], "BGR")
             surface.blit(displayImage, (0, 0))
-            # create a text surface object, on which text is drawn on it.
+            # Creating FPS counter
             text = pygame_font.render("FPS: " + str(0), True, (0, 170, 0), (0, 0, 0))
             if len(FPS) >= 10:
                 text = pygame_font.render("FPS: " + str(int(np.mean(FPS))), True, (0, 170, 0), (0, 0, 0))
-            # create a rectangular object for the text surface object
             textRect = text.get_rect()
-            # set the center of the rectangular object.
             textRect.center = (window_width // 18, window_height // 1.02)
             surface.blit(text, textRect)
+            # Creating text to show if autocliker is enabled or not
+            if clicking:
+                text = pygame_font.render("Auto-clicker: Active", True, (0, 170, 0), (0, 0, 0))
+            else:
+                text = pygame_font.render("Auto-clicker: Disabled", True, (0, 170, 0), (0, 0, 0))
+            textRect = text.get_rect()
+            textRect.center = (window_width // 2, window_height // 1.02)
+            surface.blit(text, textRect)
+            # Creating text to show the autogarden timer
             if activate_auto_garden:
                 remaining_time_garden = auto_garden_check - (time.time() - gardening_crono)
 
@@ -562,15 +599,18 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
                     if int(minutes) < 10:
                         minutes = "0" + minutes
 
-                    text = pygame_font.render(f"Garden check in {minutes}:{seconds}", True, (0, 170, 0), (0, 0, 0))
+                    text = pygame_font.render(f"Garden check in: {minutes}:{seconds}", True, (0, 170, 0), (0, 0, 0))
 
+                elif not clicking:
+                    text = pygame_font.render(f"Waiting for gardening", True, (0, 170, 0), (0, 0, 0))
                 else:
-                    text = pygame_font.render(f"Gardening Active", True, (0, 170, 0), (0, 0, 0))
+                    text = pygame_font.render(f"Gardening in course...", True, (0, 170, 0), (0, 0, 0))
 
                 textRect = text.get_rect()
                 textRect.center = (window_width // 1.2, window_height // 1.02)
                 surface.blit(text, textRect)
 
+            # Getting all the pygame events and shutting down script when the window is closed
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     print(bcolors.CYAN + "Closing..." + bcolors.ENDC)
