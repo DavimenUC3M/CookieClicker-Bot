@@ -80,6 +80,10 @@ target/
 # Pycharm
 .idea
 
+#TensorRT cache
+Models/TensorRT Cache/.engine
+Models/TensorRT Cache/.profile
+
 # Raw Dataset
 
 Cookie_Cliker_Dataset/Cookie Clicker Raw Dataset

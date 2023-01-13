@@ -1,21 +1,18 @@
-import torch
+import torch  # Imported as it adds CUDA to the PATH
 import numpy as np
 import cv2
 import time
-from PIL import Image
-import onnx
 import onnxruntime as ort
 import pygame
 import dxcam
 import threading
 import sys
 import os
-import site
 
 from pynput.mouse import Button, Controller
 from pynput.keyboard import Listener, KeyCode, Key
 
-from functions import template_matching
+from functions import template_matching, get_model_providers
 
 from execution_arguments import get_arguments
 
@@ -196,7 +193,6 @@ def garden_process():
         mouse.click(Button.left, 1)
         time.sleep(0.1)
 
-
     else:
 
         percentage_of_growth = len(growth_state_4)/total_holes
@@ -290,6 +286,7 @@ class bcolors(object): # Class to print in colors on the console
     BLACK = "\033[90m"
     CYAN = "\033[96m"
 
+
 cookie_logo = open("art/cookie_art.ans", "r")
 cookie_banner = open("art/cookie_banner.txt", "r")
 print(cookie_logo.read() + "\n")
@@ -323,6 +320,7 @@ print_every_minutes = my_args.check_run_time_every
 selected_toggle_key = my_args.toggle_key.lower()
 selected_garden_toggle_key= my_args.instagarden_toggle_key.lower()
 
+# Mapping the strings to the proper function keys
 function_keys = [("f1", Key.f1), ("f2", Key.f2),
                  ("f3", Key.f3), ("f4", Key.f4),
                  ("f5", Key.f5), ("f6", Key.f6),
@@ -343,77 +341,54 @@ for i in function_keys:
 print(bcolors.CYAN + bcolors.BOLD + bcolors.UNDERLINE + "CONFIG" + bcolors.ENDC)
 print(bcolors.CYAN + f"NN running in: {run_type}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Show pygame window: {activate_rtw}" + bcolors.ENDC)
+
 if activate_rtw:
     print(bcolors.CYAN + f"Pygame window width: {window_width}" + bcolors.ENDC)
     print(bcolors.CYAN + f"Pygame window height: {window_height}" + bcolors.ENDC)
-# print(bcolors.CYAN + f"Start with autoclicker active: {clicking}" + bcolors.ENDC)
+
 print(bcolors.CYAN + f"Autoclicker toggle key: {selected_toggle_key}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Auto aim: {activate_auto_aim}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Autogarden: {activate_auto_garden}" + bcolors.ENDC)
 print(bcolors.CYAN + f"Start autogarden process key: {selected_garden_toggle_key}" + bcolors.ENDC)
+
 if activate_auto_garden:
     print(bcolors.CYAN + f"Autogarden check every: {auto_garden_check}s" + bcolors.ENDC)
     print(bcolors.CYAN + f"Autogarden slow compost extra time: {auto_garden_extra_time}s" + bcolors.ENDC)
+
 print("\n")
 
 
 # Loading ONNX model
 
+model_name, providers = get_model_providers(use_tiny_model, run_type)
 
-
-if use_tiny_model:
-    print(bcolors.CYAN + "Loading tiny ONNX model..." + bcolors.ENDC)
-    model_name = "model_mini.onnx"
-else:
-    print(bcolors.CYAN + "Loading ONNX model..." + bcolors.ENDC)
-    model_name = "model.onnx"
-
-onnx_model = onnx.load(model_name)
-onnx.checker.check_model(model_name)
-
-if run_type == "cuda":
-
-    providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
-
-elif run_type == "tensorrt":
-
-    # Get the cuDNN DLLs rute
-    cudnn_directory = os.path.join(site.getsitepackages()[-1], "torch", "lib")
-    # Get the tensorRT DLLs rute
-    tensorrt_dll_directory = os.path.abspath(os.path.join(sys.executable, os.pardir, "Library", "lib", "tensorrt"))
-    # Add to PATH both DLLs rutes
-    os.environ["PATH"] = (os.environ["PATH"] +
-                          ";" + tensorrt_dll_directory +
-                          ";" + cudnn_directory)
-
-    providers = ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
-
-else:
-    providers = ['CPUExecutionProvider']
-
+ort.set_default_logger_severity(3)  # Avoiding the TensorRT warnings
 ort_sess = ort.InferenceSession(model_name, providers=providers)
 
 print(bcolors.CYAN + "Finished reading model" + bcolors.ENDC + "\n" + "\n")
 
-
-print(bcolors.CYAN + "Starting virtual camera..." + bcolors.ENDC)
-camera = dxcam.create(device_idx=0, output_idx=0)
+# Variables to print bounding boxes
 
 image_width = 640
 image_height = 640
 
-
 classes_dict = {0: 'GoldenCartridge',
-           1: 'GoldenCookie',
-           2: 'RedCartridge',
-           3: 'RedCookie'}
+                1: 'GoldenCookie',
+                2: 'RedCartridge',
+                3: 'RedCookie'}
 
-classes_color_dict = {0: (100,255,0),
-           1: (100,255,0),
-           2: (255,0,220),
-           3: (255,0,220)}
+classes_color_dict = {0: (100, 255, 0),  # Green for GoldenCartridge
+                      1: (100, 255, 0),  # Green for GoldenCookie
+                      2: (255, 0, 220),  # Magenta for RedCartridge
+                      3: (255, 0, 220)}  # Magenta for RedCookie
 
-font = cv2.FONT_HERSHEY_SIMPLEX
+font = cv2.FONT_HERSHEY_SIMPLEX # Font used on the bounding boxes
+
+
+# Starting virtual camera
+
+print(bcolors.CYAN + "Starting virtual camera..." + bcolors.ENDC)
+camera = dxcam.create(device_idx=0, output_idx=0)
 
 camera.start() # You can set target_fps=x
 time.sleep(0.5) # Giving time to start the camera
@@ -422,20 +397,21 @@ original_res = np.array(camera.get_latest_frame()).shape
 
 print(bcolors.CYAN + "Virtual camera ready" + bcolors.ENDC + "\n" + "\n")
 
-has_detected = True
+# Toggle variables
 
+has_detected = True
 first_toggle = True # Get the big cookie coordinates on the first toggle
+centered = False # Variable that tells if the click is centered on the big cookie or not, being not centered means not to spam clicks
+clicking = False # Start the loop without auto clicking
 
 # Creating clicker thread
 
-centered = False # Variable that tells if the click is centered on the big cookie or not, being not centered means not to spam clicks
-
-clicking = False # Start the loop without auto clicking
-
-mouse = Controller()
-
+mouse = Controller()  # Creating the mouse controller object
 click_thread = threading.Thread(target=clicker, daemon=True)  # A Daemon thread kills it when the main thread ends
 click_thread.start()
+
+
+# Creating the pygame window
 
 if activate_rtw:
     print(bcolors.CYAN + "Launching pygame window" + bcolors.ENDC + "\n" + "\n")
@@ -446,7 +422,8 @@ if activate_rtw:
 
 
 # Initialize garden variables
-instaGarden = False
+
+instaGarden = False  # If true, activates the autogarden function immediately
 isGardening = False  # Stops auto clicker when gardening
 gardening_crono = 0  # Starting the timer to perform the gardening (checks the garden on the first toggle)
 
@@ -463,9 +440,9 @@ holes_coords = []
 
 # Start the loop
 FPS = []
+FPS_window = 10  # Size of the window to calculate the average of FPS
 total_run_time = time.time()
 minute_check = 0
-
 anti_stuck_timer = 0  # Starting timer to check whether you are stuck on the menu or options or not
 
 print(bcolors.YELLOW + bcolors.BOLD + bcolors.UNDERLINE + "COOKIE BOT READY!" + bcolors.ENDC + "\n")
@@ -498,7 +475,6 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
             check_stuck_thread = threading.Thread(target=check_stuck_state, daemon=True)
             check_stuck_thread.start()
             anti_stuck_timer = time.time()
-
 
         loop_time = time.time()
 
@@ -568,11 +544,12 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
             has_detected = False
 
         if activate_rtw:
+            # Display the screen
             displayImage = pygame.image.frombuffer(img.tobytes(), img.shape[1::-1], "BGR")
             surface.blit(displayImage, (0, 0))
             # Creating FPS counter
             text = pygame_font.render("FPS: " + str(0), True, (0, 170, 0), (0, 0, 0))
-            if len(FPS) >= 10:
+            if len(FPS) >= FPS_window:
                 text = pygame_font.render("FPS: " + str(int(np.mean(FPS))), True, (0, 170, 0), (0, 0, 0))
             textRect = text.get_rect()
             textRect.center = (window_width // 18, window_height // 1.02)
@@ -616,6 +593,7 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
                     print(bcolors.CYAN + "Closing..." + bcolors.ENDC)
                     sys.exit(0)  # Ends the code
 
+        # Total run tim calculations
         run_time = time.time() - total_run_time
         run_time_hours = int(run_time / 3600)
         run_time_minutes = int(run_time / 3600 % 1 * 60)
@@ -636,7 +614,7 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
 
         loop_time = time.time() - loop_time
         FPS.append(round(1/loop_time, 0))  # Calculates the frequency of each iteration
-        if len(FPS) > 10:
+        if len(FPS) > FPS_window:
             FPS.pop(0) # Removing the oldest item from the list
 
 

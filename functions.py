@@ -2,6 +2,57 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import sys
+import site
+
+
+class bcolors(object): # Class to print in colors on the console
+    MAGENTA = "\033[95m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    YELLOW = '\033[33m'
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+    BLACK = "\033[90m"
+    CYAN = "\033[96m"
+
+
+def get_model_providers(use_tiny_model, run_type):
+    if use_tiny_model:
+        print(bcolors.CYAN + "Loading tiny ONNX model..." + bcolors.ENDC)
+        model_name = "Models/model_tiny.onnx"
+    else:
+        print(bcolors.CYAN + "Loading ONNX model..." + bcolors.ENDC)
+        model_name = "Models/model.onnx"
+
+    if run_type == "tensorrt":
+
+        print(bcolors.CYAN + "Optimizing for TensorRT..." + bcolors.ENDC)
+
+        # Get the cuDNN DLLs rute
+        cudnn_directory = os.path.join(site.getsitepackages()[-1], "torch", "lib")
+        # Get the tensorRT DLLs rute
+        tensorrt_dll_directory = os.path.abspath(os.path.join(sys.executable, os.pardir, "Library", "lib", "tensorrt"))
+        # Add to PATH both DLLs rutes
+        os.environ["PATH"] = (os.environ["PATH"] +
+                              ";" + tensorrt_dll_directory +
+                              ";" + cudnn_directory)
+
+        providers = [('TensorrtExecutionProvider', {
+            'trt_engine_cache_enable': True,
+            'trt_engine_cache_path': 'Models/TensorRT Cache',
+        }), 'CUDAExecutionProvider', 'CPUExecutionProvider']
+
+    elif run_type == "cuda":
+
+        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+
+    else:
+        providers = ['CPUExecutionProvider']
+
+    return model_name, providers
 
 
 def template_matching(img, template="Big_cookie", resolution=1440, threshold=-1, RGB=True, verbose=False):

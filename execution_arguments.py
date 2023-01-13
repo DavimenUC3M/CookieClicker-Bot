@@ -1,5 +1,6 @@
 import argparse
 
+
 def get_arguments():
     parser = argparse.ArgumentParser()
     optional_args = parser._action_groups.pop()
@@ -32,11 +33,6 @@ def get_arguments():
                         help="Select the height of the in real time window." +
                              "720 by default",
                         default=720)
-
-    #parser.add_argument("-ac", "--auto_clicker",
-                        #action="store_true",
-                        #help="Choose whether you want or not the autoclick functionality at start." +
-                             #"Start without auto clicker by default")
 
     parser.add_argument("-tk", "--toggle_key",
                         type=str,
