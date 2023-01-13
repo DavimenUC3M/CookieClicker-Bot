@@ -81,8 +81,8 @@ target/
 .idea
 
 #TensorRT cache
-Models/TensorRT Cache/.engine
-Models/TensorRT Cache/.profile
+Models/TensorRT Cache/*.engine
+Models/TensorRT Cache/*.profile
 
 # Raw Dataset
 
