@@ -47,6 +47,7 @@ def toggle_event(key):
     global TOGGLE_KEY
     global first_toggle
     global clicking
+    global centered
     global instaGarden
 
     if key == TOGGLE_KEY:
@@ -58,6 +59,7 @@ def toggle_event(key):
 
         if not clicking:
             mouse.position = big_cookie_coords  # Back to the main cookie
+            centered = True
 
         clicking = not clicking
 
@@ -394,6 +396,8 @@ camera.start() # You can set target_fps=x
 time.sleep(0.5) # Giving time to start the camera
 
 original_res = np.array(camera.get_latest_frame()).shape
+
+print(bcolors.CYAN + f"Detected resolution: {original_res[1]}x{original_res[0]}p" + bcolors.ENDC)
 
 print(bcolors.CYAN + "Virtual camera ready" + bcolors.ENDC + "\n" + "\n")
 

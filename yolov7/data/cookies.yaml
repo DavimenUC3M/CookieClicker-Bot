@@ -6,8 +6,8 @@ nc: 4
 names: ['GoldenCartridge', 'GoldenCookie', 'RedCartridge', 'RedCookie']
 
 roboflow:
-  workspace: project
+  workspace: enver
   project: cookie-clicker-golden-cookies-detector
-  version: 2
+  version: 3
   license: CC BY 4.0
-  url: https://universe.roboflow.com/project/cookie-clicker-golden-cookies-detector/dataset/2
+  url: https://universe.roboflow.com/project/cookie-clicker-golden-cookies-detector/dataset/3

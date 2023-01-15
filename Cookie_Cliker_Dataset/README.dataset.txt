@@ -1,6 +1,6 @@
-# Cookie Clicker Golden Cookies Detector > 2023-01-03 12:04pm
-https://universe.roboflow.com/object-detection/cookie-clicker-golden-cookies-detector
+# Cookie Clicker Golden Cookies Detector > Cookie Detector v2.0
+https://universe.roboflow.com/enver/cookie-clicker-golden-cookies-detector
 
-Provided by David Méndez Encinas
+Provided by a Roboflow user
 License: CC BY 4.0
 
