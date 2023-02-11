@@ -392,7 +392,7 @@ font = cv2.FONT_HERSHEY_SIMPLEX # Font used on the bounding boxes
 print(bcolors.CYAN + "Starting virtual camera..." + bcolors.ENDC)
 camera = dxcam.create(device_idx=0, output_idx=0)
 
-camera.start() # You can set target_fps=x
+camera.start(video_mode=True) # You can set target_fps=x
 time.sleep(0.5) # Giving time to start the camera
 
 original_res = np.array(camera.get_latest_frame()).shape
