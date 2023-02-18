@@ -95,7 +95,8 @@ def garden_process():
 
     # Step 1: Silence all parcels
     silence_coords = ["first_iteration"]
-    while len(silence_coords) > 0:
+    counter = 0  # Used to avoid getting stuck in while loop
+    while len(silence_coords) > 0 and counter < 20:
         silence_coords = template_matching(camera.get_latest_frame(), template="Silent_parcel",
                                            resolution=original_res[0], threshold=0.85, RGB=True, verbose=False)
 
@@ -104,6 +105,8 @@ def garden_process():
             mouse.click(Button.left, 1)
             time.sleep(0.01)
         time.sleep(0.1)
+
+        counter += 1
 
     # Step 2: Open farm and garden
 
@@ -156,7 +159,7 @@ def garden_process():
     free_space = (total_holes-planted_space)/total_holes  # Percentage of free space
     print(f"Free space: {round(free_space*100,2)}%")
 
-    if free_space >= 0.4: # Threshold to start new replanting
+    if free_space >= 0.4:  # Threshold to start new replanting
 
         print(bcolors.GREEN + f"Free space greater than 40%, replanting started..." + bcolors.ENDC)
 
@@ -176,7 +179,7 @@ def garden_process():
         time.sleep(0.2)
 
         if len(holes_coords) == 0:
-            time.sleep(0.2) # Ensuring it takes a good picture
+            time.sleep(0.2)  # Ensuring it takes a good picture
             holes_coords = template_matching(camera.get_latest_frame(), template="Holes",
                                              resolution=original_res[0], threshold=-1, RGB=True, verbose=False)
 
@@ -237,6 +240,8 @@ def check_stuck_state():
     cross_coords = template_matching(camera.get_latest_frame(), template="Close_menu",
                                             resolution=original_res[0], threshold=0.9, RGB=True, verbose=False)
 
+    counter = 0  # Used to avoid getting stuck in while loop
+
     if len(cross_coords) > 0:
 
         print(bcolors.RED + "STUCK STATE DETECTED, PROCEEDING TO CLOSE MENU WINDOW" + bcolors.ENDC + "\n")
@@ -254,7 +259,7 @@ def check_stuck_state():
 
     found_parcels = False
     silence_coords = ["first_iteration"]
-    while len(silence_coords) > 0:
+    while len(silence_coords) > 0 and counter < 20:
         silence_coords = template_matching(camera.get_latest_frame(), template="Silent_parcel",
                                            resolution=original_res[0], threshold=0.85, RGB=True, verbose=False)
 
@@ -269,6 +274,8 @@ def check_stuck_state():
         if found_parcels: # In the case it has silenced some parcels, the click will be centered
             clicking = True
             has_detected = True
+
+        counter += 1
 
     return
 
@@ -295,7 +302,7 @@ print(cookie_logo.read() + "\n")
 print(bcolors.YELLOW + cookie_banner.read() + bcolors.ENDC)
 print(bcolors.MAGENTA + "Version 0.1.2" + bcolors.ENDC + "\n")
 
-time.sleep(1) # Just to appreciate the logo and the banner xd
+time.sleep(1)  # Just to appreciate the logo and the banner xd
 
 
 # Get arguments variables
@@ -392,8 +399,8 @@ font = cv2.FONT_HERSHEY_SIMPLEX # Font used on the bounding boxes
 print(bcolors.CYAN + "Starting virtual camera..." + bcolors.ENDC)
 camera = dxcam.create(device_idx=0, output_idx=0)
 
-camera.start(video_mode=True) # You can set target_fps=x
-time.sleep(0.5) # Giving time to start the camera
+camera.start(video_mode=True)  # You can set target_fps=x
+time.sleep(0.5)  # Giving time to start the camera
 
 original_res = np.array(camera.get_latest_frame()).shape
 
@@ -510,7 +517,7 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
                 cv2.putText(img, classes_dict[classes] + ": " + str(confidence), (int(x1), int(y1)-8),
                             font, 0.6, classes_color_dict[classes], 2, cv2.LINE_AA)
 
-                if len(outputs[0]) > 7:  # Cookie storm
+                if len(outputs[0]) > 5:  # Cookie storm
                     x1 = original_res[1] * x1 / window_width
                     x2 = original_res[1] * x2 / window_width
                     y1 = original_res[0] * y1 / window_height
@@ -525,7 +532,7 @@ with Listener(on_press=toggle_event) as listener:  # Starting the listener threa
                         if clicking:
                             mouse.click(Button.left, 1)
 
-            if len(outputs[0]) <= 7:  # Single cookie
+            if len(outputs[0]) <= 5:  # Single cookie
                 x1 = original_res[1] * x1_all[0] / window_width
                 x2 = original_res[1] * x2_all[0] / window_width
                 y1 = original_res[0] * y1_all[0] / window_height
