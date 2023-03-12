@@ -84,6 +84,9 @@ target/
 Models/TensorRT Cache/*.engine
 Models/TensorRT Cache/*.profile
 
+#TensorRT install
+Models/TensorRT/*
+
 # Old Models
 
 Models/Old Models/*
