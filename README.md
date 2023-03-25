@@ -28,8 +28,13 @@ Currently the model has been trained only with 1080p and 1440p images, for other
 * **--check_run_time_every:** *Select every how many minutes you want a print of the total run time*
 * **--check_if_stuck_timer:** *Select every how many seconds you want to check if you are on the menu or options*
 
+You can check the default values by adding the -h argument
+
 ### How to install the required libraries
 All the mandatory libraries are written in the conda_environment.yml file, to create the virtual conda environment type the following code on an Anaconda prompt: *conda env create -f conda_environment.yml*
+
+### How to run the bot
+Once all the libraries are installed just type on the anaconda prompt: *python main.py -optional_arguments*
 
 ## Trailer
 [![Youtube trailer](https://img.youtube.com/vi/EBXYwDwHbGY/0.jpg)](https://youtu.be/EBXYwDwHbGY)
