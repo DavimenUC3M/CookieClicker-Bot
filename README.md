@@ -12,11 +12,7 @@ YOLOv7 repository: https://github.com/WongKinYiu/yolov7
 * Smaller model included for low end systems
 * Possibility of run it over CPU or GPU
 
-## Trailer
-[![Youtube trailer](https://img.youtube.com/vi/EBXYwDwHbGY/0.jpg)](https://youtu.be/EBXYwDwHbGY)
-
-## Time lapse
-[![Youtube time lapse](https://img.youtube.com/vi/gqcHEEmSMKM/0.jpg)](https://www.youtube.com/watch?v=gqcHEEmSMKM)
+Currently the model has been trained only with 1080p and 1440p images, for other screen resolutions the bot might not work as expected
 
 ### Execution arguments
 * **--use_tiny_model:** *Choose whether you want to use the tiny onnx model (Recommended for slower PCs)*
@@ -34,4 +30,10 @@ YOLOv7 repository: https://github.com/WongKinYiu/yolov7
 
 ### How to install the required libraries
 All the mandatory libraries are written in the conda_environment.yml file, to create the virtual conda environment type the following code on an Anaconda prompt: *conda env create -f conda_environment.yml*
+
+## Trailer
+[![Youtube trailer](https://img.youtube.com/vi/EBXYwDwHbGY/0.jpg)](https://youtu.be/EBXYwDwHbGY)
+
+## Time lapse
+[![Youtube time lapse](https://img.youtube.com/vi/gqcHEEmSMKM/0.jpg)](https://www.youtube.com/watch?v=gqcHEEmSMKM)
 
